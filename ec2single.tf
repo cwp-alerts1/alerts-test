@@ -12,7 +12,7 @@ provider "aws" {
   region  = "us-west-2"
 }
 
- #text
+ #text1234
  
 resource "aws_instance" "app_server" {
 	#zpc-skip-policy: ZS-AWS-00030:Please add a comment
