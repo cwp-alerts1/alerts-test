@@ -1,5 +1,5 @@
 ---
-- name: ISA7 Post Bulid Script
+- name: ISA7 Post Bulid Script1
   hosts: isa7database
   tasks:
   - name: Disble NLA Set Reg Key 1
