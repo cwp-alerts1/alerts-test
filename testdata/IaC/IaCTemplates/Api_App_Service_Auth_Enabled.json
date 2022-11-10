@@ -1,0 +1,106 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "noncompliant_dev_win_web_app_name": {
+            "defaultValue": "noncompliant-win-apiapp",
+            "type": "string"
+        },
+        "noncompliant_devapp_serverfarms_name": {
+            "defaultValue": "noncompliant-win-apiapp-serverfarm",
+            "type": "string"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2021-03-01",
+            "name": "[parameters('noncompliant_dev_win_web_app_name')]",
+            "location": "Central India",
+            "kind": "api",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('noncompliant_devapp_serverfarms_name'))]"
+            ],
+            "properties": {
+                "serverFarmId": "[parameters('noncompliant_devapp_serverfarms_name')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2020-12-01",
+            "name": "[concat(parameters('noncompliant_dev_win_web_app_name'), '/authsettingsV2')]",
+            "location": "Central India",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('noncompliant_dev_win_web_app_name'))]"
+            ],
+            "properties": {
+                "platform": {
+                    "enabled": false,
+                    "runtimeVersion": "~1"
+                },
+                "identityProviders": {
+                    "azureActiveDirectory": {
+                        "isAutoProvisioned": false,
+                        "registration": {
+                            "clientId": "pratik",
+                            "clientSecret": "pratik",
+                            "openIdIssuer": "[concat('https://sts.windows.net/', 'test', '/v2.0')]"
+                        },
+                        "validation": {
+                            "allowedAudiences": [
+                                "https://management.core.windows.net/"
+                            ]
+                        }
+                    }
+                },
+                "login": {
+                    "routes": {},
+                    "tokenStore": {
+                        "enabled": true,
+                        "tokenRefreshExtensionHours": 72,
+                        "fileSystem": {},
+                        "azureBlobStorage": {}
+                    },
+                    "preserveUrlFragmentsForLogins": false,
+                    "allowedExternalRedirectUrls": [],
+                    "cookieExpiration": {
+                        "convention": "FixedTime",
+                        "timeToExpiration": "08:00:00"
+                    },
+                    "nonce": {
+                        "validateNonce": true,
+                        "nonceExpirationInterval": "00:05:00"
+                    }
+                },
+                "globalValidation": {
+                    "redirectToProvider": "azureactivedirectory",
+                    "unauthenticatedClientAction": "RedirectToLoginPage"
+                },
+                "httpSettings": {
+                    "requireHttps": true,
+                    "routes": {
+                        "apiPrefix": "/.auth"
+                    },
+                    "forwardProxy": {
+                        "convention": "NoProxy"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2019-08-01",
+            "name": "[parameters('noncompliant_devapp_serverfarms_name')]",
+            "location": "Central India",
+            "sku": {
+                "Name": "S1"
+            },
+            "properties": {
+                "name": "[parameters('noncompliant_devapp_serverfarms_name')]",
+                "workerSize": 0,
+                "numberOfWorkers": 1
+            }
+        }
+    ]
+}

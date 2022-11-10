@@ -1,0 +1,12 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: CronJob Template
+  namespace: default
+spec:
+  schedule: "* * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+            automountServiceAccountToken: true
