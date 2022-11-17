@@ -1,0 +1,9 @@
+Resources:
+ DatabaseMySql:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: mysql
+      StorageEncrypted: False
+      DBClusterIdentifier: !Ref "DatabaseCluster"
+      DBInstanceClass: !FindInMap [!Ref "AWS::AccountId", !Ref "AWS::Region", "InstanceType"]
+      DBSubnetGroupName: !Ref "DatabaseSubnetGroup"

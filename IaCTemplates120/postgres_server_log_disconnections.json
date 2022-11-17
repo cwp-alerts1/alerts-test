@@ -1,0 +1,64 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "servers_dev-compliant-postgres-db": {
+            "defaultValue": "noncompliant-postgres-server",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.DBforPostgreSQL/servers",
+            "apiVersion": "2017-12-01",
+            "name": "[parameters('servers_dev-compliant-postgres-db')]",
+            "location": "eastus",
+            "sku": {
+                "name": "GP_Gen5_4",
+                "tier": "GeneralPurpose",
+                "family": "Gen5",
+                "capacity": 4
+            },
+            "properties": {
+                "administratorLogin": "XXXXX",
+                "administratorLoginPassword": "XXXXX",
+                "storageProfile": {
+                    "storageMB": 102400,
+                    "backupRetentionDays": 7,
+                    "geoRedundantBackup": "Disabled",
+                    "storageAutogrow": "Enabled"
+                },
+                "version": "11",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLSEnforcementDisabled",
+                "infrastructureEncryption": "Disabled",
+                "publicNetworkAccess": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.DBforPostgreSQL/servers/databases",
+            "apiVersion": "2017-12-01",
+            "name": "[concat(parameters('servers_dev-compliant-postgres-db'), '/postgres')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('servers_dev-compliant-postgres-db'))]"
+            ],
+            "properties": {
+                "charset": "UTF8",
+                "collation": "English_United States.1252"
+            }
+        },
+        {
+            "type": "Microsoft.DBforPostgreSQL/servers/configurations",
+            "apiVersion": "2017-12-01",
+            "name": "[concat(parameters('servers_dev-compliant-postgres-db'), '/log_disconnections')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('servers_dev-compliant-postgres-db'))]"
+            ],
+            "properties": {
+                "value": "off",
+                "source": "user-override"
+            }
+        }
+    ]
+}

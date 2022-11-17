@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: ReplicationController Template
+  namespace: default
+spec:
+  template:
+    spec:
+        automountServiceAccountToken: true
