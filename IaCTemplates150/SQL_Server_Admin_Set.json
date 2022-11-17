@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "shnoncompliantsrv"
+    },
+    "administratorUser": {
+      "type": "string",
+      "defaultValue": "adminserver1"
+    },
+    "administratorPass": {
+      "type": "string",
+      "defaultValue": "4-v3ry-53cr37-p455w0rd"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[parameters('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('administratorUser')]",
+        "administratorLoginPassword": "[parameters('administratorPass')]",
+        "version": "12.0"
+      }
+    }
+  ]
+}

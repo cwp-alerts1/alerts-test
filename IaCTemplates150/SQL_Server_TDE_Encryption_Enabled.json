@@ -1,0 +1,188 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "shcompliantsqlsrv",
+      "minLength": 1
+    },
+    "sqlServerAdminLogin": {
+      "type": "string",
+      "defaultValue": "shamdin",
+      "minLength": 1
+    },
+    "sqlServerAdminLoginPassword": {
+      "type": "secureString",
+      "defaultValue": "[newGuid()]"
+    },
+    "sqlDbName": {
+      "type": "string",
+      "defaultValue": "sqldbcompliant",
+      "minLength": 1
+    },
+    "sqlDbCollation": {
+      "type": "string",
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS",
+      "minLength": 1
+    },
+    "sqlDbEdition": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "policyAction": {
+      "type": "string",
+      "defaultValue": "add",
+      "allowedValues": [
+        "add",
+        "remove",
+        "replace"
+      ],
+      "metadata": {
+        "description": "Policy action."
+      }
+    },
+    "sqlDbRequestedServiceObjectiveName": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "S0",
+        "S1",
+        "S2",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "metadata": {
+        "description": "Describes the performance level for Edition"
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "sidkeycompliant1",
+      "minLength": 1
+    },
+    "keyName": {
+      "type": "string",
+      "defaultValue": "keyvaultkey",
+      "minLength": 1
+    },
+    "keyVersion": {
+      "type": "string",
+      "defaultValue": "6dcba7caff9141f6b7a86da7da259d6b",
+      "minLength": 1
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    }
+  },
+  "variables": {
+    "serverKeyName": "[format('{0}_{1}_{2}', parameters('keyVaultName'), parameters('keyName'), parameters('keyVersion'))]",
+    "keyUri": "[format('https://{0}.vault.azure.net/keys/{1}/{2}', parameters('keyVaultName'), parameters('keyName'), parameters('keyVersion'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2015-05-01-preview",
+      "name": "[parameters('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "SQL Logical Server"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('sqlServerAdminLogin')]",
+        "administratorLoginPassword": "[parameters('sqlServerAdminLoginPassword')]"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/accessPolicies",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', parameters('keyVaultName'), parameters('policyAction'))]",
+      "properties": {
+        "accessPolicies": [
+          {
+            "objectId": "/subscriptions/ba4b77ad-22b9-458e-90b0-e79df58b6509/resourceGroups/sidcompliantrg/providers/Microsoft.Sql/servers/shcompliantsqlsrv",
+            "tenantId": "9f208dfc-4aac-46c8-9493-6afd11dcc063",
+            "permissions": {
+              "keys": [
+                "get",
+                "wrapKey",
+                "unwrapKey"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), parameters('sqlDbName'))]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "SQL DB"
+      },
+      "properties": {
+        "collation": "[parameters('sqlDbCollation')]"
+      },
+      "sku": {
+        "name": "[parameters('sqlDbRequestedServiceObjectiveName')]",
+        "tier": "[parameters('sqlDbEdition')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('sqlServerName'), parameters('sqlDbName'), 'current')]",
+      "properties": {
+        "state": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults/accessPolicies', parameters('keyVaultName'), parameters('policyAction'))]",
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('sqlServerName'), parameters('sqlDbName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/keys",
+      "apiVersion": "2015-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), variables('serverKeyName'))]",
+      "properties": {
+        "serverKeyType": "KeyVault",
+        "uri": "[variables('keyUri')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults/accessPolicies', parameters('keyVaultName'), parameters('policyAction'))]",
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/encryptionProtector",
+      "apiVersion": "2015-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), 'current')]",
+      "properties": {
+        "serverKeyName": "[variables('serverKeyName')]",
+        "serverKeyType": "AzureKeyVault"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]",
+        "[resourceId('Microsoft.Sql/servers/keys', parameters('sqlServerName'), variables('serverKeyName'))]"
+      ]
+    }
+  ]
+}
