@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "strgName": {
+      "type": "string",
+      "defaultValue": "shnoncompliantstrg99"
+    },
+    "strgName1": {
+      "type": "string",
+      "defaultValue": "shnoncompliantstrg98"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2022-05-01",
+      "name": "[parameters('strgName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "properties": {
+        "allowBlobPublicAccess": true,
+        "isHnsEnabled": true
+      },
+      "kind": "StorageV2"
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2022-05-01",
+      "name": "[format('{0}/{1}', parameters('strgName'), 'default')]",
+      "properties": {
+        "containerDeleteRetentionPolicy": {
+          "allowPermanentDelete": true,
+          "days": 7,
+          "enabled": false
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('strgName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2022-05-01",
+      "name": "[parameters('strgName1')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "properties": {
+        "allowBlobPublicAccess": true,
+        "isHnsEnabled": false
+      },
+      "kind": "StorageV2"
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2022-05-01",
+      "name": "[format('{0}/{1}', parameters('strgName1'), 'default')]",
+      "properties": {
+        "containerDeleteRetentionPolicy": {
+          "allowPermanentDelete": true,
+          "days": 7,
+          "enabled": false
+        },
+        "deleteRetentionPolicy": {
+          "allowPermanentDelete": true,
+          "days": 7,
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('strgName1'))]"
+      ]
+    }
+  ]
+}
