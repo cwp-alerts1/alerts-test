@@ -1,0 +1,88 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The location into which the resources should be deployed."
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "shcompliantstrg1",
+      "metadata": {
+        "description": "The name of the Storage Account"
+      }
+    },
+        "userAssignedIdentityName": {
+      "type": "string",
+      "defaultValue": "siddemotestkey",
+      "metadata": {
+        "description": "The name of the existing User Assigned Identity."
+      }
+    },
+    "userAssignedIdentityResourceGroupName": {
+      "type": "string",
+      "defaultValue": "sh-dev-IaC-infra",
+      "metadata": {
+        "description": "The name of the resource group for the User Assigned Identity."
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "[substring(format('keyVault{0}{1}', newGuid(), uniqueString(resourceGroup().id)), 0, 24)]",
+      "metadata": {
+        "description": "Name of the Key Vault"
+      }
+    },
+    "keyVaultKeyName": {
+      "type": "string",
+      "defaultValue": "cmkey",
+      "metadata": {
+        "description": "Name of the key in the Key Vault"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-09-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "BlobStorage",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('userAssignedIdentityResourceGroupName')), 'Microsoft.ManagedIdentity/userAssignedIdentities', parameters('userAssignedIdentityName')))]": {}
+        }
+      },
+      "properties": {
+        "accessTier": "Hot",
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "encryption": {
+          "identity": {
+            "userAssignedIdentity": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('userAssignedIdentityResourceGroupName')), 'Microsoft.ManagedIdentity/userAssignedIdentities', parameters('userAssignedIdentityName'))]"
+          },
+          "services": {
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Keyvault"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults/keys', parameters('keyVaultName'), parameters('keyVaultKeyName'))]"
+      ]
+      
+
+    }
+  ]
+}
