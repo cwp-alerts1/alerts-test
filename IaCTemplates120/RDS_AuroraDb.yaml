@@ -1,0 +1,9 @@
+Resources:
+ DatabasePrimaryInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: aurora
+      StorageEncrypted: False
+      DBClusterIdentifier: !Ref "DatabaseCluster"
+      DBInstanceClass: !FindInMap [!Ref "AWS::AccountId", !Ref "AWS::Region", "InstanceType"]
+      DBSubnetGroupName: !Ref "DatabaseSubnetGroup"

@@ -1,0 +1,59 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "dev-compliant-postgres-db": {
+        "defaultValue": "noncompliant-postgres-server",
+        "type": "String"
+      }
+    },
+    "resources": [
+      {
+        "type": "Microsoft.DBforPostgreSQL/servers",
+        "apiVersion": "2017-12-01",
+        "name": "[parameters('dev-compliant-postgres-db')]",
+        "location": "eastus",
+        "sku": {
+          "name": "B_Gen5_1",
+          "tier": "Basic",
+          "family": "Gen5",
+          "capacity": 1
+        },
+        "properties": {
+          "storageProfile": {
+            "storageMB": 5120,
+            "backupRetentionDays": 7,
+            "geoRedundantBackup": "Disabled",
+            "storageAutogrow": "Enabled"
+          },
+          "version": "11",
+            "administratorLogin": "XXXXXX",
+            "administratorLoginPassword": "XXXXXX"
+        }
+      },
+      {
+        "type": "Microsoft.DBforPostgreSQL/servers/databases",
+        "apiVersion": "2017-12-01",
+        "name": "[concat(parameters('dev-compliant-postgres-db'), '/postgres')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dev-compliant-postgres-db'))]"
+        ],
+        "properties": {
+          "charset": "UTF8",
+          "collation": "English_United States.1252"
+        }
+      },
+        {
+        "type": "Microsoft.DBforPostgreSQL/servers/firewallRules",
+        "apiVersion": "2017-12-01",
+        "name": "[concat(parameters('dev-compliant-postgres-db'), '/AllowAllWindowsAzureIps')]",
+        "dependsOn": [
+            "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dev-compliant-postgres-db'))]"
+        ],
+        "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "0.0.0.0"
+        }
+        }
+    ]
+  }

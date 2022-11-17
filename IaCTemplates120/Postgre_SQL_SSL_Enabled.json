@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "dev-noncompliant-postgres-db": {
+        "defaultValue": "noncompliant-postgres-server",
+        "type": "String"
+      }
+    },
+    "resources": [
+      {
+        "type": "Microsoft.DBforPostgreSQL/servers",
+        "apiVersion": "2017-12-01",
+        "name": "[parameters('dev-noncompliant-postgres-db')]",
+        "location": "eastus",
+        "sku": {
+          "name": "B_Gen5_1",
+          "tier": "Basic",
+          "family": "Gen5",
+          "capacity": 1
+        },
+        "properties": {
+          "storageProfile": {
+            "storageMB": 5120,
+            "backupRetentionDays": 7,
+            "geoRedundantBackup": "Disabled",
+            "storageAutogrow": "Enabled"
+          },
+          "version": "11",
+            "administratorLogin": "XXXXX",
+            "administratorLoginPassword": "XXXXX",
+          "sslEnforcement": "Enabled"
+        }
+      },
+      {
+        "type": "Microsoft.DBforPostgreSQL/servers/databases",
+        "apiVersion": "2017-12-01",
+        "name": "[concat(parameters('dev-noncompliant-postgres-db'), '/postgres')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('dev-noncompliant-postgres-db'))]"
+        ],
+        "properties": {
+          "charset": "UTF8",
+          "collation": "English_United States.1252"
+        }
+      }
+    ]
+  }
