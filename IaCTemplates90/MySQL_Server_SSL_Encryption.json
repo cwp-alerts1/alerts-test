@@ -1,0 +1,69 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "location": {
+          "type": "string",
+          "defaultValue": "eastus"
+        },
+      "skuCapacity": {
+        "type": "int",
+        "defaultValue": 1
+      },
+      "skuFamily": {
+        "type": "string",
+        "defaultValue": "Gen5"
+      },
+      "skuName": {
+        "type": "string",
+        "defaultValue": "B_Gen5_1"
+      },
+      "skuSizeMB": {
+        "type": "int",
+        "defaultValue": 5120
+      },
+      "skuTier": {
+        "type": "string",
+        "defaultValue": "Basic"
+      },
+      "version": {
+        "type": "string",
+        "defaultValue": "5.7"
+      }
+    },
+    "resources": [
+      {
+        "apiVersion": "2017-12-01",
+        "kind": "",
+        "location": "[parameters('location')]",
+        "name": "[variables('flexibleServers_dev_noncompliant_mysql_server_name')]",
+        "properties": {
+          "version": "[parameters('version')]",
+          "administratorLogin": "[variables('adminiLogin')]",
+          "administratorLoginPassword": "[variables('adminiLoginPassword')]",
+          "storageProfile": {
+            "storageMB": "[parameters('skuSizeMB')]",
+            "backupRetentionDays": 7,
+            "geoRedundantBackup": "Disabled"
+          },
+            "sslEnforcement": "Disabled"
+        },
+        "sku": {
+          "name": "[parameters('skuName')]",
+          "tier": "[parameters('skuTier')]",
+          "capacity": "[parameters('skuCapacity')]",
+          "size": "[parameters('skuSizeMB')]",
+          "family": "[parameters('skuFamily')]"
+        },
+        "type": "Microsoft.DBforMySQL/servers",
+        "resources": [
+           
+         ]
+      }
+    ],
+    "variables": {
+      "adminiLogin": "XXXXX",
+      "adminiLoginPassword": "XXXXX",
+      "flexibleServers_dev_noncompliant_mysql_server_name": "[concat('dev-noncompliant-postgres-server', uniqueString(resourceGroup().id))]"
+    }
+  }

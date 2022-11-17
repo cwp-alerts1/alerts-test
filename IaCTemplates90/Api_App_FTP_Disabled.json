@@ -1,0 +1,58 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "noncompliant_dev_win_web_app_name": {
+            "defaultValue": "noncompliant-win-apiapp",
+            "type": "String"
+        },
+        "noncompliant_devapp_serverfarms_svc2": {
+            "defaultValue": "noncompliant-win-apiapp-serverfarm",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2021-03-01",
+            "name": "[parameters('noncompliant_dev_win_web_app_name')]",
+            "location": "Central India",
+            "kind": "api",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('noncompliant_devapp_serverfarms_svc2'))]"
+            ],
+            "properties": {
+                 "serverFarmId": "[parameters('noncompliant_devapp_serverfarms_svc2')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "apiVersion": "2021-03-01",
+            "name": "[concat(parameters('noncompliant_dev_win_web_app_name'), '/web')]",
+            "location": "Central India",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('noncompliant_dev_win_web_app_name'))]"
+            ],
+            "properties": {
+                "numberOfWorkers": 1,
+                "ftpsState": "AllAllowed"
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2019-08-01",
+            "name": "[parameters('noncompliant_devapp_serverfarms_svc2')]",
+            "location": "Central India",
+            "sku": {
+                "Name": "S1"
+            },
+            "properties": {
+                "name": "[parameters('noncompliant_devapp_serverfarms_svc2')]",
+
+                "workerSize": 0,
+                "numberOfWorkers": 1
+            }
+        }
+    ]
+}
