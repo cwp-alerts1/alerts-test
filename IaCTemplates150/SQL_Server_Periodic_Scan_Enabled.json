@@ -1,0 +1,146 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "shnoncompliantsqlserver",
+      "metadata": {
+        "description": "Name of the sql server"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location of all resources"
+      }
+    },
+    "administratorUser": {
+      "type": "string",
+      "defaultValue": "adminservermssql",
+      "metadata": {
+        "description": "Administrator username for the server."
+      }
+    },
+    "administratorPass": {
+      "type": "string",
+      "defaultValue": "4-v3ry-53cr37-p455w0rd",
+      "metadata": {
+        "description": "The administrator login password (required for server creation)."
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "shnoncompliantstrg1",
+      "metadata": {
+        "description": "Name of storage account"
+      }
+    },
+    "storageContainerName": {
+      "type": "string",
+      "defaultValue": "storagecontainer1",
+      "metadata": {
+        "description": "Name os storage account container"
+      }
+    },
+    "sqlVulnerabilityName": {
+      "type": "string",
+      "defaultValue": "sqlVulnerability",
+      "metadata": {
+        "description": "Name of Sql Vulnerability"
+      }
+    }
+  },
+  "variables": {
+    "StorageBlobContributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+    "uniqueRoleGuid": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), variables('StorageBlobContributor'), resourceId('Microsoft.Sql/servers', parameters('sqlServerName')))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers", 
+      "apiVersion": "2022-02-01-preview",
+      "name": "[parameters('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('administratorUser')]",
+        "administratorLoginPassword": "[parameters('administratorPass')]",
+        "version": "12.0"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/securityAlertPolicies",
+      "apiVersion": "2021-08-01-preview",
+      "name": "[format('{0}/advancedSecurityAssessment', parameters('sqlServerName'))]",
+      "properties": {
+        "state": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-09-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2"
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
+      "apiVersion": "2020-03-01-preview",
+      "name": "[format('{0}/Microsoft.Authorization/{1}', parameters('storageAccountName'), variables('uniqueRoleGuid'))]",
+      "properties": {
+        "roleDefinitionId": "[variables('StorageBlobContributor')]",
+        "principalId": "[reference(resourceId('Microsoft.Sql/servers', parameters('sqlServerName')), '2020-08-01-preview', 'Full').identity.principalId]",
+        "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2021-09-01",
+      "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2021-09-01",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('storageContainerName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/vulnerabilityAssessments",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), parameters('sqlVulnerabilityName'))]",
+
+      "properties": {
+        "recurringScans": {
+          "isEnabled": false
+        },
+        "storageContainerPath": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))).primaryEndpoints.blob, parameters('storageContainerName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]",
+        "[resourceId('Microsoft.Sql/servers/securityAlertPolicies', split(format('{0}/advancedSecurityAssessment', parameters('sqlServerName')), '/')[0], split(format('{0}/advancedSecurityAssessment', parameters('sqlServerName')), '/')[1])]",
+        "[resourceId('Microsoft.Storage/storageAccounts/providers/roleAssignments', split(format('{0}/Microsoft.Authorization/{1}', parameters('storageAccountName'), variables('uniqueRoleGuid')), '/')[0], split(format('{0}/Microsoft.Authorization/{1}', parameters('storageAccountName'), variables('uniqueRoleGuid')), '/')[1], split(format('{0}/Microsoft.Authorization/{1}', parameters('storageAccountName'), variables('uniqueRoleGuid')), '/')[2])]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', parameters('storageAccountName'), 'default', parameters('storageContainerName'))]"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "servers_dev-non-compliant-sql-server": {
+            "defaultValue": "noncompliant-sql-server",
+            "type": "String"
+        },
+        "servers_dev-compliant-sql-db": {
+            "defaultValue": "compliant-sql-db",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "2021-11-01-preview",
+            "name": "[parameters('servers_dev-non-compliant-sql-server')]",
+            "location": "eastus",
+            "kind": "v12.0",
+            "properties": {
+                "administratorLogin": "XXXXX",
+                "administratorLoginPassword": "XXXXX",
+                "version": "12.0",
+                "publicNetworkAccess": "Enabled",
+                "restrictOutboundNetworkAccess": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "apiVersion": "2021-08-01-preview",
+            "name": "[format('{0}/{1}', parameters('servers_dev-non-compliant-sql-server'), parameters('servers_dev-compliant-sql-db'))]",
+            "location": "eastus",
+            "sku": {
+              "name": "Standard",
+              "tier": "Standard"
+            },
+            "dependsOn": [
+              "[resourceId('Microsoft.Sql/servers', parameters('servers_dev-non-compliant-sql-server'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/auditingPolicies",
+            "apiVersion": "2014-04-01",
+            "name": "[concat(parameters('servers_dev-non-compliant-sql-server'), '/Default')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_dev-non-compliant-sql-server'))]"
+            ],
+            "properties": {
+                "auditingState": "Disabled"
+            }
+        },
+        {
+            "type": "Microsoft.Sql/servers/auditingSettings",
+            "apiVersion": "2021-11-01-preview",
+            "name": "[concat(parameters('servers_dev-non-compliant-sql-server'), '/Default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('servers_dev-non-compliant-sql-server'))]"
+            ],
+            "properties": {
+                "retentionDays": 0,
+                "auditActionsAndGroups": [],
+                "isStorageSecondaryKeyInUse": false,
+                "isAzureMonitorTargetEnabled": false,
+                "isManagedIdentityInUse": false,
+                "state": "Disabled",
+                "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+            }
+        }
+    ]
+}
