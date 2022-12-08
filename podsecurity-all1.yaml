@@ -1,7 +1,7 @@
 apiVersion: policy/v1
 kind: PodSecurityPolicy
 metadata:
-  name: privileged
+  name: privileged1
   labels:
     environment: production
     app: nginx
