@@ -9,7 +9,7 @@ terraform {
 resource "aws_security_group" "ES1" {
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
-    from_port   = 9200
+    from_port   = 0
     to_port     = 9200
     protocol    = "tcp"
   }
